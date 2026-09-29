@@ -1,0 +1,58 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/google/uuid"
+)
+
+type user struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type health struct {
+	STATUS string `json:"status"`
+	Time   string `json:"time"`
+}
+
+func main() {
+
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	mux := http.NewServeMux()
+
+	// Текстовый ответ
+	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, world!")
+	})
+
+	// Пока временный JSON (без UUID — добавим на шаге 4)
+	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(user{
+			ID:   uuid.NewString(), // теперь реальный UUID
+			Name: "Gopher",
+		})
+	})
+
+	//healthcheck
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(health{
+			STATUS: "ok",
+			Time:   "<RFC3339>",
+		})
+	})
+
+	addr := ":" + port
+	log.Printf("Starting on %s ...", addr)
+	log.Fatal(http.ListenAndServe(addr, mux))
+}
